@@ -1,4 +1,2 @@
-fastapi>=0.110
-uvicorn>=0.29
 networkx>=3.0
-pydantic>=2.0
+# optional, only for pushing to real Cisco gear: netmiko

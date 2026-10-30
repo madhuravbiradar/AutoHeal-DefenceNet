@@ -1,0 +1,426 @@
+{
+  "incidents": [
+    {
+      "key": "LINK_DOWN:R1-R2",
+      "injected": 8,
+      "detected": 9,
+      "restored": 10,
+      "subtype": "CABLE_CUT_OR_PORT_FAILURE",
+      "correct": true,
+      "status": "CLOSED",
+      "plan": "REROUTE_ONLY",
+      "severity": 3,
+      "confidence": 0.93,
+      "recommendation": ""
+    },
+    {
+      "key": "NODE_DOWN:R4",
+      "injected": 20,
+      "detected": 21,
+      "restored": 22,
+      "subtype": "ROUTER_FAILURE",
+      "correct": true,
+      "status": "CLOSED",
+      "plan": "REROUTE+STANDBY",
+      "severity": 4,
+      "confidence": 0.97,
+      "recommendation": ""
+    },
+    {
+      "key": "LINK_DEGRADED:R6-R7",
+      "injected": 35,
+      "detected": 36,
+      "restored": 37,
+      "subtype": "RF_JAMMING_OR_INTERFERENCE",
+      "correct": true,
+      "status": "CLOSED",
+      "plan": "REROUTE+STANDBY+FAILOVER",
+      "severity": 3,
+      "confidence": 0.8,
+      "recommendation": ""
+    },
+    {
+      "key": "NODE_DOWN:SW6",
+      "injected": 44,
+      "detected": 45,
+      "restored": 45,
+      "subtype": "SWITCH_FAILURE",
+      "correct": true,
+      "status": "MANUAL_ACTION_REQUIRED",
+      "plan": "",
+      "severity": 3,
+      "confidence": 0.97,
+      "recommendation": "8 single-homed hosts isolated; no remote path exists. Dispatch repair for SW6."
+    },
+    {
+      "key": "NODE_DOWN:SRV3",
+      "injected": 50,
+      "detected": 51,
+      "restored": 52,
+      "subtype": "SERVER_FAILURE",
+      "correct": true,
+      "status": "CLOSED",
+      "plan": "REROUTE+STANDBY+FAILOVER",
+      "severity": 3,
+      "confidence": 0.97,
+      "recommendation": ""
+    },
+    {
+      "key": "LINK_DEGRADED:R2-R3",
+      "injected": 72,
+      "detected": 73,
+      "restored": 74,
+      "subtype": "GRAY_FAILURE_INFERRED",
+      "correct": true,
+      "status": "MITIGATED",
+      "plan": "REROUTE_ONLY",
+      "severity": 3,
+      "confidence": 0.65,
+      "recommendation": ""
+    }
+  ],
+  "events": [
+    {
+      "tick": 9,
+      "stage": "DETECT",
+      "msg": "link R1-R2 -> DOWN"
+    },
+    {
+      "tick": 9,
+      "stage": "DIAGNOSE",
+      "msg": "LINK_DOWN @ R1-R2 | CABLE_CUT_OR_PORT_FAILURE | severity 3/5 | confidence 93% | 12 flows hit"
+    },
+    {
+      "tick": 9,
+      "stage": "DIAGNOSE",
+      "msg": "  cause: both endpoints alive but link unreachable: cable cut / port / transceiver failure"
+    },
+    {
+      "tick": 9,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: probe failures on link while both endpoints answer heartbeats"
+    },
+    {
+      "tick": 9,
+      "stage": "PLAN",
+      "msg": "chose REROUTE_ONLY (predicted service 100.0% vs 92.0% now, 0 new standby link(s), 0 flow(s) on replica servers)"
+    },
+    {
+      "tick": 9,
+      "stage": "PLAN",
+      "msg": "alternatives: REROUTE_ONLY=992, REROUTE+STANDBY=992, REROUTE+STANDBY+FAILOVER=990, FULL_RECOVERY(+PREEMPT)=990"
+    },
+    {
+      "tick": 9,
+      "stage": "EXECUTE",
+      "msg": "{'REROUTE': 12} applied, 364 CLI lines generated (dry-run Cisco IOS)"
+    },
+    {
+      "tick": 10,
+      "stage": "VERIFY",
+      "msg": "LINK_DOWN:R1-R2: service restored (12 flows >=95% delivery)"
+    },
+    {
+      "tick": 21,
+      "stage": "DETECT",
+      "msg": "node R4 -> DOWN"
+    },
+    {
+      "tick": 21,
+      "stage": "DETECT",
+      "msg": "12 link state changes (correlated; root cause analysis follows)"
+    },
+    {
+      "tick": 21,
+      "stage": "DIAGNOSE",
+      "msg": "NODE_DOWN @ R4 | ROUTER_FAILURE | severity 4/5 | confidence 97% | 48 flows hit"
+    },
+    {
+      "tick": 21,
+      "stage": "DIAGNOSE",
+      "msg": "  cause: router R4 unresponsive (power/hardware/destroyed)"
+    },
+    {
+      "tick": 21,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: heartbeat lost on R4"
+    },
+    {
+      "tick": 21,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: 12 adjacent links down = symptoms, not separate faults"
+    },
+    {
+      "tick": 21,
+      "stage": "DIAGNOSE",
+      "msg": "  core partitioned into 2 islands; healable by standby links"
+    },
+    {
+      "tick": 21,
+      "stage": "PLAN",
+      "msg": "chose REROUTE+STANDBY (predicted service 100.0% vs 61.0% now, 2 new standby link(s), 0 flow(s) on replica servers)"
+    },
+    {
+      "tick": 21,
+      "stage": "PLAN",
+      "msg": "alternatives: REROUTE_ONLY=677, REROUTE+STANDBY=979, REROUTE+STANDBY+FAILOVER=969, FULL_RECOVERY(+PREEMPT)=969"
+    },
+    {
+      "tick": 21,
+      "stage": "EXECUTE",
+      "msg": "ACTIVATE_LINK R2-R6  (needed to bypass failure / restore connectivity)"
+    },
+    {
+      "tick": 21,
+      "stage": "EXECUTE",
+      "msg": "ACTIVATE_LINK R3-R7  (needed to bypass failure / restore connectivity)"
+    },
+    {
+      "tick": 21,
+      "stage": "EXECUTE",
+      "msg": "{'ACTIVATE_LINK': 2, 'REROUTE': 48} applied, 897 CLI lines generated (dry-run Cisco IOS)"
+    },
+    {
+      "tick": 22,
+      "stage": "VERIFY",
+      "msg": "NODE_DOWN:R4: service restored (48 flows >=95% delivery)"
+    },
+    {
+      "tick": 31,
+      "stage": "PLAN",
+      "msg": "no better option than current state (991); holding. [REROUTE_ONLY=991, REROUTE+STANDBY=991, REROUTE+STANDBY+FAILOVER=991, FULL_RECOVERY(+PREEMPT)=991]"
+    },
+    {
+      "tick": 36,
+      "stage": "DETECT",
+      "msg": "link R6-R7 -> DEGRADED"
+    },
+    {
+      "tick": 36,
+      "stage": "DIAGNOSE",
+      "msg": "LINK_DEGRADED @ R6-R7 | RF_JAMMING_OR_INTERFERENCE | severity 3/5 | confidence 80% | 17 flows hit"
+    },
+    {
+      "tick": 36,
+      "stage": "DIAGNOSE",
+      "msg": "  cause: high loss with normal delay and low load: physical-layer interference/jamming"
+    },
+    {
+      "tick": 36,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: loss=70%"
+    },
+    {
+      "tick": 36,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: latency x1.1"
+    },
+    {
+      "tick": 36,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: utilisation=34%"
+    },
+    {
+      "tick": 36,
+      "stage": "PLAN",
+      "msg": "chose REROUTE+STANDBY+FAILOVER (predicted service 100.0% vs 89.9% now, 0 new standby link(s), 8 flow(s) on replica servers)"
+    },
+    {
+      "tick": 36,
+      "stage": "PLAN",
+      "msg": "alternatives: REROUTE_ONLY=942, REROUTE+STANDBY=942, REROUTE+STANDBY+FAILOVER=982, FULL_RECOVERY(+PREEMPT)=957"
+    },
+    {
+      "tick": 36,
+      "stage": "EXECUTE",
+      "msg": "{'FAILOVER': 8, 'REROUTE': 9} applied, 301 CLI lines generated (dry-run Cisco IOS)"
+    },
+    {
+      "tick": 37,
+      "stage": "VERIFY",
+      "msg": "LINK_DEGRADED:R6-R7: service restored (17 flows >=95% delivery)"
+    },
+    {
+      "tick": 45,
+      "stage": "DETECT",
+      "msg": "node SW6 -> DOWN"
+    },
+    {
+      "tick": 45,
+      "stage": "DETECT",
+      "msg": "10 link state changes (correlated; root cause analysis follows)"
+    },
+    {
+      "tick": 45,
+      "stage": "DIAGNOSE",
+      "msg": "NODE_DOWN @ SW6 | SWITCH_FAILURE | severity 3/5 | confidence 97% | 8 flows hit"
+    },
+    {
+      "tick": 45,
+      "stage": "DIAGNOSE",
+      "msg": "  cause: switch SW6 unresponsive (power/hardware/destroyed)"
+    },
+    {
+      "tick": 45,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: heartbeat lost on SW6"
+    },
+    {
+      "tick": 45,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: 10 adjacent links down = symptoms, not separate faults"
+    },
+    {
+      "tick": 45,
+      "stage": "VERIFY",
+      "msg": "NODE_DOWN:SW6: 8 flows unrecoverable remotely -> MANUAL ACTION REQUIRED"
+    },
+    {
+      "tick": 51,
+      "stage": "DETECT",
+      "msg": "node SRV3 -> DOWN"
+    },
+    {
+      "tick": 51,
+      "stage": "DETECT",
+      "msg": "link R3-SRV3 -> DOWN"
+    },
+    {
+      "tick": 51,
+      "stage": "DIAGNOSE",
+      "msg": "NODE_DOWN @ SRV3 | SERVER_FAILURE | severity 3/5 | confidence 97% | 10 flows hit"
+    },
+    {
+      "tick": 51,
+      "stage": "DIAGNOSE",
+      "msg": "  cause: server SRV3 unresponsive (power/hardware/destroyed)"
+    },
+    {
+      "tick": 51,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: heartbeat lost on SRV3"
+    },
+    {
+      "tick": 51,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: 2 adjacent links down = symptoms, not separate faults"
+    },
+    {
+      "tick": 51,
+      "stage": "PLAN",
+      "msg": "chose REROUTE+STANDBY+FAILOVER (predicted service 92.0% vs 82.5% now, 0 new standby link(s), 18 flow(s) on replica servers)"
+    },
+    {
+      "tick": 51,
+      "stage": "PLAN",
+      "msg": "alternatives: REROUTE_ONLY=808, REROUTE+STANDBY=808, REROUTE+STANDBY+FAILOVER=893, FULL_RECOVERY(+PREEMPT)=867"
+    },
+    {
+      "tick": 51,
+      "stage": "EXECUTE",
+      "msg": "{'FAILOVER': 10} applied, 126 CLI lines generated (dry-run Cisco IOS)"
+    },
+    {
+      "tick": 52,
+      "stage": "VERIFY",
+      "msg": "NODE_DOWN:SRV3: service restored (10 flows >=95% delivery)"
+    },
+    {
+      "tick": 64,
+      "stage": "DETECT",
+      "msg": "node R4 -> OK"
+    },
+    {
+      "tick": 64,
+      "stage": "DETECT",
+      "msg": "node SRV3 -> OK"
+    },
+    {
+      "tick": 64,
+      "stage": "DETECT",
+      "msg": "15 link state changes (correlated; root cause analysis follows)"
+    },
+    {
+      "tick": 64,
+      "stage": "RESOLVE",
+      "msg": "LINK_DOWN:R1-R2 cleared (3 consecutive healthy probes); fail-back after 3s hold-down"
+    },
+    {
+      "tick": 64,
+      "stage": "RESOLVE",
+      "msg": "NODE_DOWN:R4 cleared (3 consecutive healthy probes); fail-back after 3s hold-down"
+    },
+    {
+      "tick": 64,
+      "stage": "RESOLVE",
+      "msg": "LINK_DEGRADED:R6-R7 cleared (3 consecutive healthy probes); fail-back after 3s hold-down"
+    },
+    {
+      "tick": 64,
+      "stage": "RESOLVE",
+      "msg": "NODE_DOWN:SRV3 cleared (3 consecutive healthy probes); fail-back after 3s hold-down"
+    },
+    {
+      "tick": 67,
+      "stage": "PLAN",
+      "msg": "chose REROUTE_ONLY (predicted service 92.0% vs 92.0% now, 0 new standby link(s), 0 flow(s) on replica servers)"
+    },
+    {
+      "tick": 67,
+      "stage": "PLAN",
+      "msg": "alternatives: REROUTE_ONLY=911, REROUTE+STANDBY=911, REROUTE+STANDBY+FAILOVER=911, FULL_RECOVERY(+PREEMPT)=911"
+    },
+    {
+      "tick": 67,
+      "stage": "EXECUTE",
+      "msg": "DEACTIVATE_LINK R2-R6  (standby link no longer needed)"
+    },
+    {
+      "tick": 67,
+      "stage": "EXECUTE",
+      "msg": "DEACTIVATE_LINK R3-R7  (standby link no longer needed)"
+    },
+    {
+      "tick": 67,
+      "stage": "EXECUTE",
+      "msg": "{'REROUTE': 43, 'FAILBACK': 18, 'DEACTIVATE_LINK': 2} applied, 1002 CLI lines generated (dry-run Cisco IOS)"
+    },
+    {
+      "tick": 73,
+      "stage": "DIAGNOSE",
+      "msg": "LINK_DEGRADED @ R2-R3 | GRAY_FAILURE_INFERRED | severity 3/5 | confidence 65% | 17 flows hit"
+    },
+    {
+      "tick": 73,
+      "stage": "DIAGNOSE",
+      "msg": "  cause: probes look healthy but flows crossing this link fail: silent/gray failure (inferred by tomography)"
+    },
+    {
+      "tick": 73,
+      "stage": "DIAGNOSE",
+      "msg": "  evidence: 17 flows share this link and are losing packets"
+    },
+    {
+      "tick": 73,
+      "stage": "PLAN",
+      "msg": "chose REROUTE_ONLY (predicted service 92.0% vs 87.1% now, 2 new standby link(s), 0 flow(s) on replica servers)"
+    },
+    {
+      "tick": 73,
+      "stage": "PLAN",
+      "msg": "alternatives: REROUTE_ONLY=902, REROUTE+STANDBY=902, REROUTE+STANDBY+FAILOVER=898, FULL_RECOVERY(+PREEMPT)=898"
+    },
+    {
+      "tick": 73,
+      "stage": "EXECUTE",
+      "msg": "{'REROUTE': 17} applied, 518 CLI lines generated (dry-run Cisco IOS)"
+    },
+    {
+      "tick": 74,
+      "stage": "VERIFY",
+      "msg": "LINK_DEGRADED:R2-R3: service restored (17 flows >=95% delivery)"
+    }
+  ],
+  "avg_delivery_with": 0.9403035714285715,
+  "avg_delivery_without": 0.7360892857142858
+}
