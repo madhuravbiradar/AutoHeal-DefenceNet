@@ -18,6 +18,10 @@ class Store:
             CREATE TABLE IF NOT EXISTS alerts(
               id INTEGER PRIMARY KEY AUTOINCREMENT, tick INTEGER, time TEXT, level TEXT, kind TEXT,
               link TEXT, risk REAL, message TEXT);
+            CREATE TABLE IF NOT EXISTS users(
+              id INTEGER PRIMARY KEY AUTOINCREMENT, username TEXT UNIQUE NOT NULL, email TEXT UNIQUE NOT NULL,
+              full_name TEXT NOT NULL, organization TEXT, role TEXT NOT NULL, salt TEXT NOT NULL,
+              pw_hash TEXT NOT NULL, created_at TEXT);
             CREATE TABLE IF NOT EXISTS audit(
               id INTEGER PRIMARY KEY AUTOINCREMENT, time TEXT, user TEXT, role TEXT, action TEXT, detail TEXT);
             """)
@@ -67,6 +71,20 @@ class Store:
         with self.lock:
             rows = self.db.execute("SELECT * FROM audit ORDER BY id DESC LIMIT ?", (limit,)).fetchall()
         return [dict(r) for r in rows]
+
+    def add_user(self, username, email, full_name, organization, role, salt, pw_hash):
+        with self.lock:
+            self.db.execute("INSERT INTO users(username,email,full_name,organization,role,salt,pw_hash,created_at) VALUES (?,?,?,?,?,?,?,?)",
+                            (username, email, full_name, organization, role, salt, pw_hash,
+                             datetime.now().isoformat(timespec="seconds")))
+            self.db.commit()
+
+    def find_user(self, identifier):
+        """Look up by username OR email (case-insensitive)."""
+        ident = identifier.strip().lower()
+        with self.lock:
+            r = self.db.execute("SELECT * FROM users WHERE lower(username)=? OR lower(email)=?", (ident, ident)).fetchone()
+        return dict(r) if r else None
 
     def wipe(self):
         with self.lock:

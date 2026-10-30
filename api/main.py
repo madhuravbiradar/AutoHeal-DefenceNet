@@ -39,8 +39,19 @@ def operator(who=Depends(viewer)):
 
 
 class Login(BaseModel):
-    username: str
+    username: str          # username or email
     password: str
+
+
+class Signup(BaseModel):
+    full_name: str = ""
+    username: str = ""
+    email: str = ""
+    password: str = ""
+    confirm_password: str = ""
+    role: str = ""
+    organization: str = ""
+    operator_code: str = ""
 
 
 class Inject(BaseModel):
@@ -73,6 +84,20 @@ def login(b: Login):
     if not r:
         raise HTTPException(401, "bad credentials")
     return r
+
+
+@app.post("/api/signup")
+def signup(b: Signup):
+    errors = rt.signup(b.model_dump() if hasattr(b, "model_dump") else b.dict())
+    if errors:
+        raise HTTPException(422, {"errors": errors})
+    return {"ok": True}
+
+
+@app.post("/api/logout")
+def logout(authorization: Optional[str] = Header(None)):
+    rt.logout((authorization or "").replace("Bearer ", ""))
+    return {"ok": True}
 
 
 @app.get("/api/me")
@@ -167,6 +192,16 @@ def speed(b: Speed, who=Depends(operator)):
 @app.get("/")
 def index():
     return FileResponse(ROOT / "dashboard" / "index.html")
+
+
+@app.get("/login")
+def login_page():
+    return FileResponse(ROOT / "dashboard" / "signin.html")
+
+
+@app.get("/signup")
+def signup_page():
+    return FileResponse(ROOT / "dashboard" / "signup.html")
 
 
 app.mount("/static", StaticFiles(directory=ROOT / "dashboard"), name="static")

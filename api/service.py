@@ -12,15 +12,15 @@ from demo.scenarios import SCENARIOS, ScenarioRunner
 from engine.orchestrator import Orchestrator
 from simulator.network import FAULT_KINDS, SITES, TOPOLOGY, Simulator
 
-_SALT = b"selfheal-demo-salt"
+import re
+
+OPERATOR_CODE = os.environ.get("SELFHEAL_OPERATOR_CODE", "HEAL-OPS-2026")   # needed to create an operator account
+_EMAIL = re.compile(r"^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$")
+_USER = re.compile(r"^[A-Za-z0-9_.-]{3,20}$")
 
 
-def _hash(pw):
-    return hashlib.pbkdf2_hmac("sha256", pw.encode(), _SALT, 50_000).hex()
-
-
-USERS = {"operator": {"pw": _hash("operator123"), "role": "operator"},
-         "viewer": {"pw": _hash("viewer123"), "role": "viewer"}}
+def _hash(pw, salt):
+    return hashlib.pbkdf2_hmac("sha256", pw.encode(), bytes.fromhex(salt), 100_000).hex()
 
 
 class Runtime:
@@ -32,6 +32,7 @@ class Runtime:
         self.runner = ScenarioRunner()
         self.tick_seconds = float(tick_seconds or os.environ.get("TICK_SECONDS", 1.0))
         self.tokens = {}
+        self._seed_demo_users()
         self._thread = None
         self._stop = threading.Event()
 
@@ -54,14 +55,60 @@ class Runtime:
             time.sleep(self.tick_seconds)
 
     # ------------------------------------------------------------------ auth
-    def login(self, username, password):
-        u = USERS.get(username)
-        if not u or not secrets.compare_digest(u["pw"], _hash(password)):
+    def _create_user(self, username, email, full_name, org, role, password):
+        salt = secrets.token_hex(16)
+        self.store.add_user(username, email, full_name, org, role, salt, _hash(password, salt))
+
+    def _seed_demo_users(self):
+        for u, role in (("operator", "operator"), ("viewer", "viewer")):
+            if not self.store.find_user(u):
+                self._create_user(u, f"{u}@demo.local", u.title() + " (demo)", "Demo", role, u + "123")
+
+    def signup(self, f):
+        """f: dict with full_name, username, email, password, confirm_password, role, organization, operator_code.
+        Returns {field: message} errors (empty dict = created)."""
+        g = lambda k: (f.get(k) or "").strip()
+        err = {}
+        if len(g("full_name")) < 2:
+            err["full_name"] = "Full name is required (at least 2 characters)."
+        if not _USER.match(g("username")):
+            err["username"] = "Username is required: 3-20 letters, numbers, dot, dash or underscore."
+        if not _EMAIL.match(g("email")):
+            err["email"] = "A valid email address is required."
+        pw = f.get("password") or ""
+        if len(pw) < 8 or not re.search(r"[A-Za-z]", pw) or not re.search(r"\d", pw):
+            err["password"] = "Password is required: at least 8 characters with a letter and a number."
+        if pw != (f.get("confirm_password") or ""):
+            err["confirm_password"] = "Passwords do not match."
+        role = g("role")
+        if role not in ("viewer", "operator"):
+            err["role"] = "Please choose a role."
+        elif role == "operator" and g("operator_code") != OPERATOR_CODE:
+            err["operator_code"] = "A valid operator access code is required for the operator role."
+        if not err:
+            if self.store.find_user(g("username")):
+                err["username"] = "This username is already taken."
+            if self.store.find_user(g("email")):
+                err["email"] = "An account with this email already exists."
+        if err:
+            return err
+        self._create_user(g("username"), g("email").lower(), g("full_name"), g("organization"), role, pw)
+        self.store.add_audit(g("username"), role, "signup")
+        return {}
+
+    def login(self, identifier, password):
+        u = self.store.find_user(identifier or "")
+        if not u or not secrets.compare_digest(u["pw_hash"], _hash(password or "", u["salt"])):
             return None
         tok = secrets.token_urlsafe(24)
-        self.tokens[tok] = {"user": username, "role": u["role"]}
-        self.store.add_audit(username, u["role"], "login")
-        return {"token": tok, "user": username, "role": u["role"]}
+        self.tokens[tok] = {"user": u["username"], "role": u["role"], "name": u["full_name"]}
+        self.store.add_audit(u["username"], u["role"], "login")
+        return {"token": tok, "user": u["username"], "role": u["role"], "name": u["full_name"]}
+
+    def logout(self, token):
+        who = self.tokens.pop(token, None)
+        if who:
+            self.store.add_audit(who["user"], who["role"], "logout")
 
     def who(self, token):
         return self.tokens.get(token)

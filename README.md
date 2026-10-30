@@ -25,7 +25,10 @@ pip install -r requirements.txt
 python run.py                                          # opens http://localhost:8000
 ```
 
-Logins: **operator / operator123** (can approve, pause, inject, run scenarios) · **viewer / viewer123** (read-only).
+Open http://localhost:8000 → you land on **Sign in** (`/login`); new users use **Create an account** (`/signup`).
+Required fields are marked with a red **\***. Demo accounts: **operator / operator123** (approve, pause, inject, run scenarios) · **viewer / viewer123** (read-only).
+Self-registered *viewer* accounts need nothing extra; an *operator* account needs the access code `HEAL-OPS-2026`
+(change it with the env var `SELFHEAL_OPERATOR_CODE`). Accounts live in `data/selfheal.db`; passwords are salted PBKDF2 hashes.
 
 No web server needed for a quick check: `python run_demo.py -v` replays all scenarios and prints the
 engine-vs-baseline comparison with full incident timelines. Tests: `python -m unittest discover -s tests -v`.
@@ -57,11 +60,12 @@ Use the speed selector to run 2×/4× faster. Record a backup screen capture of 
 | `engine/orchestrator.py` | the state machine; reassess once after a failed proof, then escalate |
 | `db/store.py` | SQLite: incidents (fault, evidence, plan, decision, proof, recovery time, approver), alerts, audit log |
 | `api/service.py`, `api/main.py` | engine loop + auth (service) and the FastAPI endpoints |
+| `dashboard/signin.html`, `signup.html`, `auth.css` | sign-in and sign-up pages (required fields marked with *) |
 | `dashboard/index.html` | network map, risk bars, latency chart, incident card with approve/reject/manual console |
 | `demo/` | scenarios, naive baseline, headless comparison |
 | `tools/pt_check.py` | 30-minute Packet Tracer feasibility probe (Plan B) |
 
-API (all under `/api`, Bearer token from `POST /login`): `GET state, alerts, incidents, incidents/{id}, audit, scenarios, compare` ·
+API (all under `/api`, Bearer token from `POST /login`): `POST signup, login, logout` · `GET state, alerts, incidents, incidents/{id}, audit, scenarios, compare` ·
 operator only: `POST incidents/{id}/approve | reject | manual`, `pause`, `resume`, `inject`, `reset`, `scenarios/{name}/start`, `speed`.
 Interactive docs at `/docs`.
 

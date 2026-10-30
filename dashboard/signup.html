@@ -1,0 +1,77 @@
+<!DOCTYPE html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Sign up · Self-Healing Network</title><link rel="stylesheet" href="/static/auth.css"></head>
+<body><main class="box">
+  <div class="brand"><span>🛡</span><h1>Create your account</h1></div>
+  <p class="sub">Self-Healing Network · operations console</p>
+  <div id="banner" class="banner" role="alert"></div>
+  <p class="note"><span class="req" style="margin:0">*</span> Fields marked with an asterisk are required.</p>
+  <form id="f" novalidate autocomplete="on">
+    <label for="full_name">Full name<span class="req" aria-hidden="true">*</span></label>
+    <input id="full_name" required aria-required="true" autocomplete="name" placeholder="e.g. Sanvi Rao"><div class="err" id="e_full_name"></div>
+
+    <label for="username">Username<span class="req" aria-hidden="true">*</span></label>
+    <input id="username" required aria-required="true" autocomplete="username" placeholder="3-20 letters, numbers, . _ -"><div class="err" id="e_username"></div>
+
+    <label for="email">Email address<span class="req" aria-hidden="true">*</span></label>
+    <input id="email" type="email" required aria-required="true" autocomplete="email" placeholder="you@company.com"><div class="err" id="e_email"></div>
+
+    <label for="password">Password<span class="req" aria-hidden="true">*</span></label>
+    <div class="pw"><input id="password" type="password" required aria-required="true" autocomplete="new-password" placeholder="At least 8 characters">
+      <button type="button" id="tg" aria-label="Show or hide password">Show</button></div>
+    <div class="meter"><i id="meter"></i></div><div class="hint">At least 8 characters, with a letter and a number.</div><div class="err" id="e_password"></div>
+
+    <label for="confirm_password">Confirm password<span class="req" aria-hidden="true">*</span></label>
+    <input id="confirm_password" type="password" required aria-required="true" autocomplete="new-password" placeholder="Re-enter your password"><div class="err" id="e_confirm_password"></div>
+
+    <label for="role">Role<span class="req" aria-hidden="true">*</span></label>
+    <select id="role" required aria-required="true">
+      <option value="">Select a role…</option>
+      <option value="viewer">Viewer: watch the network (read-only)</option>
+      <option value="operator">Operator: approve fixes, run scenarios</option>
+    </select><div class="err" id="e_role"></div>
+
+    <div id="codebox" class="hidden">
+      <label for="operator_code">Operator access code<span class="req" aria-hidden="true">*</span></label>
+      <input id="operator_code" type="password" autocomplete="off" placeholder="Ask your team lead for the code">
+      <div class="hint">Required only for the Operator role. Default for this demo: <code>HEAL-OPS-2026</code></div><div class="err" id="e_operator_code"></div>
+    </div>
+
+    <label for="organization">Organization / team <span class="opt">(optional)</span></label>
+    <input id="organization" autocomplete="organization" placeholder="e.g. NOC Team Alpha">
+
+    <button class="btn" id="go" type="submit">Create account</button>
+  </form>
+  <p class="alt">Already have an account? <a href="/login">Sign in</a></p>
+</main>
+<script>
+const $=id=>document.getElementById(id);
+const F=["full_name","username","email","password","confirm_password","role","operator_code"];
+const val=id=>$(id).value, trim=id=>$(id).value.trim();
+function mark(id,msg){$(id).classList.toggle("invalid",!!msg);$("e_"+id).textContent=msg||""}
+function check(){const e={},pw=val("password");
+ if(trim("full_name").length<2)e.full_name="Full name is required (at least 2 characters).";
+ if(!/^[A-Za-z0-9_.-]{3,20}$/.test(trim("username")))e.username="Username is required: 3-20 letters, numbers, dot, dash or underscore.";
+ if(!/^[^@\s]+@[^@\s]+\.[A-Za-z]{2,}$/.test(trim("email")))e.email="A valid email address is required.";
+ if(pw.length<8||!/[A-Za-z]/.test(pw)||!/\d/.test(pw))e.password="Password is required: at least 8 characters with a letter and a number.";
+ if(!val("confirm_password"))e.confirm_password="Please confirm your password.";else if(pw!==val("confirm_password"))e.confirm_password="Passwords do not match.";
+ if(!val("role"))e.role="Please choose a role.";
+ if(val("role")==="operator"&&!trim("operator_code"))e.operator_code="The operator access code is required for the operator role.";
+ return e}
+function show(e){F.forEach(k=>mark(k,e[k]));const first=F.find(k=>e[k]);if(first)$(first).focus();return !first}
+$("role").onchange=()=>{$("codebox").classList.toggle("hidden",val("role")!=="operator")};
+$("tg").onclick=()=>{const t=$("password").type==="password"?"text":"password";$("password").type=t;$("confirm_password").type=t;$("tg").textContent=t==="password"?"Show":"Hide"};
+$("password").oninput=()=>{const p=val("password");let s=0;if(p.length>=8)s++;if(/[A-Za-z]/.test(p)&&/\d/.test(p))s++;if(p.length>=12)s++;if(/[^A-Za-z0-9]/.test(p))s++;
+ $("meter").style.width=(s*25)+"%";$("meter").style.background=s<=1?"var(--bad)":s<=2?"#f5a623":"var(--ok)"};
+F.forEach(k=>$(k).addEventListener("blur",()=>{const e=check();if($(k).value!==""||k==="role")mark(k,e[k])}));
+$("f").addEventListener("submit",async ev=>{ev.preventDefault();$("banner").className="banner";
+ if(!show(check()))return;
+ $("go").disabled=true;$("go").textContent="Creating account…";
+ const body={full_name:trim("full_name"),username:trim("username"),email:trim("email"),password:val("password"),confirm_password:val("confirm_password"),role:val("role"),organization:trim("organization"),operator_code:trim("operator_code")};
+ try{const r=await fetch("/api/signup",{method:"POST",headers:{"Content-Type":"application/json"},body:JSON.stringify(body)});
+  const d=await r.json().catch(()=>({}));
+  if(r.status===422&&d.detail&&d.detail.errors){show(d.detail.errors);throw new Error("Please fix the highlighted fields.")}
+  if(!r.ok)throw new Error(typeof d.detail==="string"?d.detail:"Sign up failed.");
+  location.replace("/login?registered="+encodeURIComponent(body.username));
+ }catch(e){const b=$("banner");b.className="banner bad";b.textContent=e.message;$("go").disabled=false;$("go").textContent="Create account"}});
+</script></body></html>
