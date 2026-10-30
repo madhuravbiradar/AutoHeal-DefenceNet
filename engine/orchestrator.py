@@ -158,6 +158,18 @@ class Orchestrator:
                         self._log(inc, "close", "Fault cleared by itself: no action needed")
                         inc["decision"], inc["gate_reason"] = "NO_ACTION", "Transient fault, self-recovered"
                         self._finish(inc, "mitigated", persist_fault=False)
+            elif inc["status"] == "awaiting_approval":
+                # keep the diagnosis fresh while the human decides (e.g. link_failure -> intermittent_link)
+                d = self._diags.get(inc["target"])
+                if d and (d["fault"] != inc["fault"] or d["confidence"] != inc["confidence"]):
+                    relabel = d["fault"] != inc["fault"]
+                    cands = planner.make_plan(d, self.sim, self.assess, self.failed_fixes)
+                    inc.update(fault=d["fault"], confidence=d["confidence"], evidence=d["evidence"], readings=d["readings"])
+                    if cands:
+                        inc.update(plan=cands[0], alternatives=cands[1:])
+                    if relabel:
+                        self._log(inc, "diagnose", f"Diagnosis updated while waiting: {d['fault']} · confidence {d['confidence']} · " + d["evidence"][0])
+                    self._save(inc)
             elif inc["status"] == "proving":
                 inc["probes"].append(self.sim.probe())
                 if len(inc["probes"]) >= proof.PROBES:

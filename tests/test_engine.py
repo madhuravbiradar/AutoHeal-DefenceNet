@@ -91,6 +91,17 @@ class Scenarios(unittest.TestCase):
         for _ in range(6): o.step()
         self.assertEqual(inc["status"], "resolved")
 
+    def test_paused_flap_relabels_to_intermittent_while_waiting(self):
+        sim = Simulator(7); o = Orchestrator(sim, Store(":memory:")); o.set_mode("paused")
+        sim.inject("flap", "A-B")
+        for _ in range(9): o.step()
+        inc = list(o.incidents.values())[0]
+        self.assertEqual(inc["status"], "awaiting_approval")
+        self.assertEqual(inc["fault"], "intermittent_link")
+        o.approve(inc["id"], "operator")
+        for _ in range(6): o.step()
+        self.assertEqual(inc["status"], "resolved")
+
     def test_compare_covers_all_scenarios(self):
         rows = compare()
         self.assertEqual(len(rows), 6)
@@ -113,6 +124,60 @@ class Service(unittest.TestCase):
         self.assertEqual(rt.incidents()[0]["status"], "resolved")
         self.assertIn("links", rt.state())
         self.assertTrue(rt.store.audit())
+
+
+class Accounts(unittest.TestCase):
+    good = dict(full_name="Sanvi Rao", username="sanvi_r", email="Sanvi@Example.com", password="Passw0rd99",
+                confirm_password="Passw0rd99", role="viewer", organization="")
+
+    def test_required_fields_are_reported(self):
+        rt = Runtime(db_path=":memory:")
+        errs = rt.signup({})
+        for k in ("full_name", "username", "email", "password", "role"):
+            self.assertIn(k, errs)
+
+    def test_validation_rules(self):
+        rt = Runtime(db_path=":memory:")
+        self.assertIn("email", rt.signup({**self.good, "email": "nope"}))
+        self.assertIn("password", rt.signup({**self.good, "password": "short1", "confirm_password": "short1"}))
+        self.assertIn("password", rt.signup({**self.good, "password": "onlyletters", "confirm_password": "onlyletters"}))
+        self.assertIn("confirm_password", rt.signup({**self.good, "confirm_password": "different1"}))
+        self.assertIn("username", rt.signup({**self.good, "username": "a b"}))
+
+    def test_signup_then_login_by_username_or_email(self):
+        rt = Runtime(db_path=":memory:")
+        self.assertEqual(rt.signup(self.good), {})
+        self.assertIn("username", rt.signup(self.good))                                   # duplicate username
+        self.assertIn("email", rt.signup({**self.good, "username": "other_user"}))        # duplicate email
+        self.assertEqual(rt.login("sanvi_r", "Passw0rd99")["role"], "viewer")
+        self.assertEqual(rt.login("SANVI@example.com", "Passw0rd99")["user"], "sanvi_r")
+        self.assertIsNone(rt.login("sanvi_r", "wrong-pass1"))
+
+    def test_operator_role_needs_access_code(self):
+        from api.service import OPERATOR_CODE
+        rt = Runtime(db_path=":memory:")
+        self.assertIn("operator_code", rt.signup({**self.good, "role": "operator"}))
+        self.assertIn("operator_code", rt.signup({**self.good, "role": "operator", "operator_code": "guess"}))
+        self.assertEqual(rt.signup({**self.good, "role": "operator", "operator_code": OPERATOR_CODE}), {})
+        self.assertEqual(rt.login("sanvi_r", "Passw0rd99")["role"], "operator")
+
+    def test_demo_accounts_and_logout(self):
+        rt = Runtime(db_path=":memory:")
+        r = rt.login("operator", "operator123")
+        self.assertEqual(r["role"], "operator")
+        rt.logout(r["token"])
+        self.assertIsNone(rt.who(r["token"]))
+
+    def test_pages_mark_required_fields_with_asterisk(self):
+        import re
+        base = os.path.join(os.path.dirname(os.path.dirname(os.path.abspath(__file__))), "dashboard")
+        up = open(os.path.join(base, "signup.html"), encoding="utf-8").read()
+        for fid in ("full_name", "username", "email", "password", "confirm_password", "role", "operator_code"):
+            self.assertRegex(up, r'<label for="%s">[^<]*<span class="req"' % fid)
+        self.assertNotRegex(up, r'<label for="organization">[^<]*<span class="req"')       # optional field
+        inn = open(os.path.join(base, "signin.html"), encoding="utf-8").read()
+        for fid in ("id", "pw"):
+            self.assertRegex(inn, r'<label for="%s">[^<]*<span class="req"' % fid)
 
 
 if __name__ == "__main__":
