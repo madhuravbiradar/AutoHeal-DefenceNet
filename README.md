@@ -1,41 +1,72 @@
-# Autonomous Self-Healing Network (SelfHeal 2.0)
+=AutoHeal DefenceNet
 
-Detects failures, finds **what** failed and **where**, diagnoses the cause, picks the best recovery plan and
-applies it automatically so packet flow resumes. Built around a 7-router ring, 14 access switches, 112 PCs, 12 servers.
+AI-Powered Self-Healing Network System
 
-## Run
-    pip install -r requirements.txt
-    python run_demo.py            # full narrated scenario + comparison with/without healing
-    python run_demo.py --quiet    # report only
-    python -m unittest discover -s tests -v
+🌐 Live Website
 
-    python demo_resume.py --fault all   # follow ONE packet stream: break -> self-heal -> resume (link/router/server/jam)
+Visit our website: https://packet-medic.emergent.host
 
-Outputs: `output/incident_report.json`, `output/timeline.csv`.
+📌 Project Overview
 
-Typical result: a failure is detected within 1 s and traffic is flowing again on a new path within ~2 s,
-then verified for 5 s of 100% delivery.
+AutoHeal DefenceNet detects network failures, identifies what failed and where, diagnoses the cause, selects the best recovery plan, and applies recovery actions automatically to restore packet flow.
 
-## Pipeline (selfheal/)
-| Stage | File | What it does |
-|---|---|---|
-| Monitor / Detect | `monitor.py` | Probes every node and link each tick (heartbeat, loss, latency) + per-flow delivery. Debounced state machines: 2 bad samples to declare, 3 good to clear (no flapping). |
-| Diagnose | `diagnosis.py` | Root-cause correlation (dead router => its links are *symptoms*), classification (cable cut, router/switch/server failure, jamming, congestion, latency degradation), impact (affected flows), isolation, ring partition, single points of failure, **tomography** to find silent failures the probes cannot see. |
-| Plan | `planner.py` | Builds 4 complete strategies (reroute / +standby links / +server failover / +priority preemption), predicts each outcome on a capacity model, scores, and picks the best. Refuses to act if no plan beats the current state. |
-| Execute | `executor.py`, `cisco_adapter.py` | Transactional, make-before-break, automatic rollback. Emits Cisco IOS CLI (dry-run by default; `live=True` + netmiko for real devices). |
-| Verify | `healer.py` | Confirms flows recover (>=95% delivery), tracks incidents (MTTD/MTTR), fail-back after 3 s hold-down, releases standby links, escalates unrecoverable cases to "manual action required". |
+The simulated network consists of:
 
-## Design rules
-* The healer sees only probe results (never ground truth), as on real hardware.
-* Only routers carry transit traffic; switches/servers/PCs are access nodes.
-* Priority 3 = command traffic, 2 = normal, 1 = bulk. Under overload, bulk is shed first.
-* Server pairs (SRVn, SRVn+6) are replicas; flows fail over to the replica when the primary dies.
+- 7 routers arranged in a ring
+- 14 access switches
+- 112 PCs
+- 12 servers
 
-## Using it on a real network
-Replace `SimNetwork` probes with ping/SNMP/telemetry and let `CiscoAdapter(live=True, creds=...)` push the CLI.
-The detection, diagnosis and planning code is unchanged.
+⚙️ Key Features
 
-## Honest limits
-Latency/bandwidth numbers and fault behaviour are simulated. Jamming vs. cable-cut is inferred from
-loss/latency/utilisation signatures (heuristic, with confidence score), not measured physically. Hosts behind a dead
-single-homed switch cannot be recovered remotely; the system reports them instead of hiding them.
+- Network fault detection and monitoring
+- Root-cause diagnosis
+- Automatic recovery planning
+- Network rerouting and server failover
+- Recovery verification
+- Incident reporting and audit logs
+- Cisco IOS command generation for supported real-device integration
+
+🛠️ Technologies
+
+- Python
+- NetworkX
+- Matplotlib
+- Netmiko (optional for real Cisco device integration)
+
+🚀 How to Run
+
+Install dependencies:
+
+pip install -r requirements.txt
+
+Run the demonstration:
+
+python run_demo.py
+
+Run the quieter report:
+
+python run_demo.py --quiet
+
+Run the tests:
+
+python -m unittest discover -s tests -v
+
+Run the packet recovery demonstration:
+
+python demo_resume.py --fault all
+
+📊 Outputs
+
+The project generates:
+
+- "output/incident_report.json"
+- "output/timeline.csv"
+
+⚠️ Limitations
+
+Network latency, bandwidth, and fault behaviour are simulated. Distinguishing jamming from cable cuts relies on heuristic signatures and confidence scores. Hosts behind a failed single-homed switch may require manual intervention.
+
+👩‍💻 Repository
+
+"AutoHeal-DefenceNet on GitHub" (https://github.com/madhuravbiradar/AutoHeal-DefenceNet)
